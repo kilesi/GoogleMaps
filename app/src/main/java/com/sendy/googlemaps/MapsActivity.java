@@ -1,6 +1,7 @@
 package com.sendy.googlemaps;
 
 import android.Manifest;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.location.Location;
@@ -12,10 +13,13 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
+import android.view.View;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.Result;
 import com.google.android.gms.common.api.Status;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
@@ -31,11 +35,19 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.libraries.places.api.Places;
 import com.google.android.libraries.places.api.model.Place;
+import com.google.android.libraries.places.api.net.PlacesClient;
 import com.google.android.libraries.places.widget.AutocompleteSupportFragment;
 import com.google.android.libraries.places.widget.listener.PlaceSelectionListener;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.maps.android.PolyUtil;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
+
+import java.lang.reflect.Array;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -46,7 +58,9 @@ import retrofit2.Callback;
 import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
+import retrofit2.http.Body;
 import retrofit2.http.GET;
+import retrofit2.http.POST;
 
 public class MapsActivity<points> extends FragmentActivity implements OnMapReadyCallback,
         GoogleApiClient.ConnectionCallbacks,
@@ -63,6 +77,7 @@ public class MapsActivity<points> extends FragmentActivity implements OnMapReady
     Place place;
     Location location;
     Status status;
+    TextView textView;
     private String encodedRoute;
     private Polyline polyline;
 
@@ -71,51 +86,61 @@ public class MapsActivity<points> extends FragmentActivity implements OnMapReady
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
         Places.initialize(getApplicationContext(), "AIzaSyBTpq2aXpU-MsCALXcmCWpNE6-hNZ11mZI");
-//        PlacesClient placesClient = Places.createClient(this);
+       //PlacesClient placesClient = Places.createClient(this);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             checkLocationPermission();
         }
 
         // Initializing
         MarkerPoints = new ArrayList<>();
-
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
-
         // Initialize the AutocompleteSupportFragment.
         AutocompleteSupportFragment autocompleteFragment = (AutocompleteSupportFragment)
                 getSupportFragmentManager().findFragmentById(R.id.autocomplete_fragment);
-
         // Specify the types of place data to return.
         autocompleteFragment.setPlaceFields(Arrays.asList(Place.Field.ID, Place.Field.NAME, Place.Field.LAT_LNG));
-
         // Set up a PlaceSelectionListener to handle the response.
         autocompleteFragment.setOnPlaceSelectedListener(new PlaceSelectionListener() {
             @Override
             public void onPlaceSelected(@NonNull Place place1) {
-                // TODO: place marker on selected place.
+                //TODO: place marker on selected place.
+//                ArrayList<Place> places = new ArrayList<>();
+//                ArrayList<Object> placeObjects = new ArrayList<>();
                 place = place1;
-                Log.d(TAG,"place:" +place.toString());
-                //mMap.addMarker(new MarkerOptions().position(place.getLatLng()));
-               if (place!=null){
-                   mMap.clear();
-
-               }
+                //places.add(place);
+//                placeObjects.addAll(places);
+//                TinyDB tinyDB = new TinyDB(getApplicationContext());
+//                tinyDB.putListObject("places", placeObjects);
+//
+//                // Convert PlaceObjects to PlaceList
+//                ArrayList<Object> retrievedObject = new ArrayList<>();
+//                retrievedObject = tinyDB.getListObject("places", Object.class);
+//
+//                ArrayList<Place> retrievedPlaces = new ArrayList<>();
+//                for (Object object : retrievedObject) {
+//                    retrievedPlaces.add((Place)  object);
+//                }
+//
+//                // on click of action button
+//                String placeName = "";
+//                for (Place place : retrievedPlaces) {
+//                    placeName = place.getName();
+//                }
+                Log.d(TAG, "place:" + place.toString());
+                if (place != null) {
+                    mMap.clear();
+                }
                 mMap.addMarker(new MarkerOptions().position(place.getLatLng()));
-               //mMap.addPolyline((new PolylineOptions().add(new LatLng(mLastLocation.getLatitude(),mLastLocation.getLongitude()), new LatLng(place.getLatLng().latitude,place.getLatLng().longitude))));
-
-
-              //new FetchUrl().execute(getpoints(),(new LatLng(mLastLocation.getLatitude(),mLastLocation.getLongitude()),new LatLng(place.getLatLng().latitude,place.getLatLng().longitude)));
-            getPolyline();
+                getPolyline();
             }
 
             @Override
             public void onError(@NonNull Status status) {
                 // TODO: Handle the error.
                 Log.i(TAG, "An error occurred: " + status);
-
             }
         });
         //create Retrofit object
@@ -123,91 +148,94 @@ public class MapsActivity<points> extends FragmentActivity implements OnMapReady
                 .baseUrl(Polyline.BASE_URL)
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
-
         //Build Api
         polyline = retrofit.create(Polyline.class);
-
+        postOrders();
     }
 
-    public void getPolyline(){
-        ////////////////////////////////////////////////////////////////////////////////////////////////////
-        
-//        // Origin of route
-//        String str_origin = "origin=" + mLastLocation.getLatitude() + "," + mLastLocation.getLongitude();
-//        // Destination of route
-//       String str_dest = "destination=" + place.getLatLng().latitude + "," + place.getLatLng().longitude;
-        String str_origin = "origin"+mLastLocation.getLatitude()+","+mLastLocation.getLongitude();
-        String str_dest ="destination" + place.getLatLng().latitude+","+place.getLatLng().longitude;
+    public void getPolyline() {
+        String str_origin = "origin=" + mLastLocation.getLatitude() + "," + mLastLocation.getLongitude();
+        String str_dest = "destination="+place.getLatLng().latitude + "," + place.getLatLng().longitude;
         // Sensor enabled
         String sensor = "sensor=false";
-
-        //String parameters = mLastLocation + "&" + place + "&" + sensor;
         String output = "json";
-        String parameters = str_origin + "&" + str_dest+ "&"+sensor;
-        String url = output + "?" + parameters+"&key=AIzaSyBTpq2aXpU-MsCALXcmCWpNE6-hNZ11mZI";
+        String parameters = str_origin + "&" + str_dest;
+        final String url = output + "?" + parameters + "&key=AIzaSyBTpq2aXpU-MsCALXcmCWpNE6-hNZ11mZI";
         //call Api method
-        Call<List<JsonObject>> call = polyline.getpoints(url);
+        Call<JsonObject> call = polyline.getpoints(url);
+        Log.w(TAG, "url: " + url);
 
         //call api using empty method
-        call.enqueue(new Callback<List<JsonObject>>() {
+        call.enqueue(new Callback<JsonObject>() {
             @Override
-            public void onResponse(Call<List<JsonObject>> call, Response<List<JsonObject>> response) {
-                ArrayList<LatLng> points;
-                PolylineOptions lineOptions = null;
+            public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
+                Log.w(TAG, "url is okay");
+                List<LatLng> latlng = new ArrayList<>(0);
+                PolylineOptions lineOptions = new PolylineOptions();
+                JsonObject response1 = response.body();
+                Log.w(TAG, "response: " + response1.toString());
+                JsonArray routes = response1.get("routes").getAsJsonArray();
+                JsonArray legs = routes.get(0).getAsJsonObject().get("legs").getAsJsonArray();
+                //JsonArray distance = legs.get(0).getAsJsonObject().get("distance").getAsJsonArray();
+                JsonArray steps = legs.get(0).getAsJsonObject().get("steps").getAsJsonArray();
 
-                // Traversing through all the routes
-                ArrayList result = new ArrayList<>();
-                for (int i = 0; i < result.size(); i++) {
-                    points = new ArrayList<>();
-                    lineOptions = new PolylineOptions();
+                JsonObject distance = legs.get(0).getAsJsonObject().get("distance").getAsJsonObject();
+                String parseDistance = distance.get("text").getAsString();
 
-                    // Fetching i-th route
-                    List<HashMap<String, String>> path = (List<HashMap<String, String>>) result.get(i);
-
-                    // Fetching all the points in i-th route
-                    for (int j = 0; j < path.size(); j++) {
-                        HashMap<String, String> point = path.get(j);
-
-                        double lat = Double.parseDouble(point.get("lat"));
-                        double lng = Double.parseDouble(point.get("lng"));
-                        LatLng position = new LatLng(lat, lng);
-
-                        points.add(position);
-                    }
-
-                    // Adding all the points in the route to LineOptions
-                    lineOptions.addAll(points);
-                    lineOptions.width(10);
-                    lineOptions.color(Color.RED);
-
-                    Log.d("onPostExecute","onPostExecute lineoptions decoded");
+                JsonObject duration = legs.get(0).getAsJsonObject().get("duration").getAsJsonObject();
+                String parseTime = duration.get("text").getAsString();
+                for (int i = 0; i < steps.size(); i++) {
+                    JsonObject step = steps.get(i).getAsJsonObject();
+                    JsonObject polyline = step.get("polyline").getAsJsonObject();
+                    String encoded = polyline.get("points").getAsString();
+                    latlng.addAll(PolyUtil.decode(encoded));
                 }
-
-                // Drawing polyline in the Google Map for the i-th route
-                if(lineOptions != null) {
-                    mMap.addPolyline(lineOptions);
-                }
-                else {
-                    Log.d("onPostExecute","without Polylines drawn");
-                }
+                Toast.makeText(getApplicationContext(), "The distance is" + parseDistance + " and travel time is" + parseTime, Toast.LENGTH_LONG).show();
+                lineOptions.addAll(latlng);
+                mMap.addPolyline(lineOptions);
+                Log.w(TAG, "points not passed correctly");
             }
 
             @Override
-            public void onFailure(Call<List<JsonObject>> call, Throwable t) {
+            public void onFailure(Call<JsonObject> call, Throwable t) {
+                Log.d(TAG, "url:" + url);
 
             }
 
         });
+
+    }
+
+    public void postOrders() {
+        //declare variable url and initialize with the url provided
+        String url = "https://orderstest.sendyit.com/orders/query_order?apikey=4RNNeyATKN6B6S6XiOyJdPMEJ3oLRKBT";
+        //declare variable body and perform POST operation
+        JsonObject body = new JsonObject();
+        body.addProperty("order_no", "AC57XI813-41B");
+        Call<JsonObject> call1 = polyline.postOrder(url, body);
+        call1.enqueue(new Callback<JsonObject>() {
+            @Override
+            public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
+                if (response.isSuccessful()) {
+                    JsonObject response2 = response.body();
+                    Log.i(TAG, "response2: " + response2);
+                    JsonArray result = response2.get("result").getAsJsonArray();
+                    JsonObject element1 = result.get(0).getAsJsonObject();
+                    String order_no = element1.get("order_no").getAsString();
+                    Log.d(TAG, "this is the order number: " + order_no);
+                }
+            }
+
+            @Override
+            public void onFailure(Call<JsonObject> call, Throwable t) {
+                Log.d(TAG, "the error is: " + t.getMessage());
+            }
+        });
+
     }
 
     /**
      * Manipulates the map once available.
-     * This callback is triggered when the map is ready to be used.
-     * This is where we can add markers or lines, add listeners or move the camera. In this case,
-     * we just add a marker near Sydney, Australia.
-     * If Google Play services is not installed on the device, the user will be prompted to install
-     * it inside the SupportMapFragment. This method will only be triggered once the user has
-     * installed Google Play services and returned to the app.
      */
     @Override
     public void onMapReady(GoogleMap googleMap) {
@@ -221,185 +249,16 @@ public class MapsActivity<points> extends FragmentActivity implements OnMapReady
                 buildGoogleApiClient();
                 mMap.setMyLocationEnabled(true);
             }
-        }
-        else {
+        } else {
             buildGoogleApiClient();
             mMap.setMyLocationEnabled(true);
         }
 
     }
 
-//    private String getUrl(LatLng mLastLocation, LatLng place) {
-//
-//        // Origin of route
-//        String str_origin = "origin=" + mLastLocation.latitude + "," + mLastLocation.longitude;
-//
-//        // Destination of route
-//        String str_dest = "destination=" + place.latitude + "," + place.longitude;
-//
-//
-//        // Sensor enabled
-//        String sensor = "sensor=false";
-//
-//        // Building the parameters to the web service
-////        String parameters = str_origin + "&" + str_dest + "&" + sensor;
-//
-//        // Output format
-//        String output = "json";
-//
-//        // Building the url to the web service
-//        String url = "https://maps.googleapis.com/maps/api/directions/" + output + "?" + parameters+"&key=AIzaSyBTpq2aXpU-MsCALXcmCWpNE6-hNZ11mZI";
-//        //String url = "https://maps.googleapis.com/maps/api/directions/" + output + "?" + parameters;
-//
-//        return url;
-//    }
-
-    /**
-     * A method to download json data from url
-     */
-//    private String downloadUrl(String strUrl) throws IOException {
-//        String data = "";
-//        InputStream iStream = null;
-//        HttpURLConnection urlConnection = null;
-//        try {
-//            URL url = new URL(strUrl);
-//
-//            // Creating an http connection to communicate with url
-//            urlConnection = (HttpURLConnection) url.openConnection();
-//
-//            // Connecting to url
-//            urlConnection.connect();
-//
-//            // Reading data from url
-//            iStream = urlConnection.getInputStream();
-//
-//            BufferedReader br = new BufferedReader(new InputStreamReader(iStream));
-//
-//            StringBuffer sb = new StringBuffer();
-//
-//            String line = "";
-//            while ((line = br.readLine()) != null) {
-//                sb.append(line);
-//            }
-//
-//            data = sb.toString();
-//            Log.d("downloadUrl", data.toString());
-//            br.close();
-//
-//        } catch (Exception e) {
-//            Log.d("Exception", e.toString());
-//        } finally {
-//            iStream.close();
-//            urlConnection.disconnect();
-//        }
-//        return data;
-//    }
-
-//    // Fetches data from url passed
-//    private class FetchUrl extends AsyncTask<String, Void, String> {
-//
-//        @Override
-//        protected String doInBackground(String... url) {
-//
-//            // For storing data from web service
-//            String data = "";
-//
-//            try {
-//                // Fetching the data from web service
-//                data = downloadUrl(url[0]);
-//                Log.d("Background Task data", data.toString());
-//            } catch (Exception e) {
-//                Log.d("Background Task", e.toString());
-//            }
-//            return data;
-//        }
-//
-//        @Override
-//        protected void onPostExecute(String result) {
-//            super.onPostExecute(result);
-//
-//            ParserTask parserTask = new ParserTask();
-//
-//            // Invokes the thread for parsing the JSON data
-//            parserTask.execute(result);
-//
-//        }
-//    }
-
     /**
      * A class to parse the Google Places in JSON format
      */
-    
-//    private class ParserTask extends AsyncTask<String, Integer, List<List<HashMap<String, String>>>> {
-//        // Parsing the data in non-ui thread
-//        @Override
-//        protected List<List<HashMap<String, String>>> doInBackground(String... jsonData) {
-//
-//            JSONObject jObject;
-//            List<List<HashMap<String, String>>> routes = null;
-//
-//            try {
-//                jObject = new JSONObject(jsonData[0]);
-//                Log.d("ParserTask",jsonData[0].toString());
-//                DataParser parser = new DataParser();
-//                Log.d("ParserTask", parser.toString());
-//
-//                // Starts parsing data
-//                routes = parser.parse(jObject);
-//                Log.d("ParserTask","Executing routes");
-//                Log.d("ParserTask",routes.toString());
-//
-//            } catch (Exception e) {
-//                Log.d("ParserTask",e.toString());
-//                e.printStackTrace();
-//            }
-//            return routes;
-//        }
-//
-//        // Executes in UI thread, after the parsing process
-//        @Override
-//        protected void onPostExecute(List<List<HashMap<String, String>>> result) {
-//            ArrayList<LatLng> points;
-//            PolylineOptions lineOptions = null;
-//
-//            // Traversing through all the routes
-//            for (int i = 0; i < result.size(); i++) {
-//                points = new ArrayList<>();
-//                lineOptions = new PolylineOptions();
-//
-//                // Fetching i-th route
-//                List<HashMap<String, String>> path = result.get(i);
-//
-//                // Fetching all the points in i-th route
-//                for (int j = 0; j < path.size(); j++) {
-//                    HashMap<String, String> point = path.get(j);
-//
-//                    double lat = Double.parseDouble(point.get("lat"));
-//                    double lng = Double.parseDouble(point.get("lng"));
-//                    LatLng position = new LatLng(lat, lng);
-//
-//                    points.add(position);
-//                }
-//
-//                // Adding all the points in the route to LineOptions
-//                lineOptions.addAll(points);
-//                lineOptions.width(10);
-//                lineOptions.color(Color.RED);
-//
-//                Log.d("onPostExecute","onPostExecute lineoptions decoded");
-//
-//            }
-//
-//            // Drawing polyline in the Google Map for the i-th route
-//            if(lineOptions != null) {
-//                mMap.addPolyline(lineOptions);
-//            }
-//            else {
-//                Log.d("onPostExecute","without Polylines drawn");
-//            }
-//        }
-//    }
-
     protected synchronized void buildGoogleApiClient() {
         mGoogleApiClient = new GoogleApiClient.Builder(this)
                 .addConnectionCallbacks(this)
@@ -448,7 +307,6 @@ public class MapsActivity<points> extends FragmentActivity implements OnMapReady
         //move map camera
         mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
         mMap.animateCamera(CameraUpdateFactory.zoomTo(11));
-
         //stop location updates
         if (mGoogleApiClient != null) {
             LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
@@ -462,7 +320,8 @@ public class MapsActivity<points> extends FragmentActivity implements OnMapReady
     }
 
     public static final int MY_PERMISSIONS_REQUEST_LOCATION = 99;
-    public boolean checkLocationPermission(){
+
+    public boolean checkLocationPermission() {
         if (ContextCompat.checkSelfPermission(this,
                 Manifest.permission.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED) {
@@ -470,17 +329,10 @@ public class MapsActivity<points> extends FragmentActivity implements OnMapReady
             // Asking user if explanation is needed
             if (ActivityCompat.shouldShowRequestPermissionRationale(this,
                     Manifest.permission.ACCESS_FINE_LOCATION)) {
-
-                // Show an explanation to the user *asynchronously* -- don't block
-                // this thread waiting for the user's response! After the user
-                // sees the explanation, try again to request the permission.
-
                 //Prompt the user once explanation has been shown
                 ActivityCompat.requestPermissions(this,
                         new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
                         MY_PERMISSIONS_REQUEST_LOCATION);
-
-
             } else {
                 // No explanation needed, we can request the permission.
                 ActivityCompat.requestPermissions(this,
@@ -522,9 +374,72 @@ public class MapsActivity<points> extends FragmentActivity implements OnMapReady
                 return;
             }
 
-            // other 'case' lines to check for other permissions this app might request.
-            // You can add here other case statements according to your requirement.
         }
     }
-}
 
+    public void postResponse(View view) {
+            //declare variable url and initialize with the url provided
+            String url = "https://orderstest.sendyit.com/orders/query_order?apikey=4RNNeyATKN6B6S6XiOyJdPMEJ3oLRKBT";
+            //declare variable body and perform POST operation
+            JsonObject body = new JsonObject();
+            body.addProperty("order_no", "AC57XI813-41B");
+            Call<JsonObject> call1 = polyline.postOrder(url, body);
+            call1.enqueue(new Callback<JsonObject>() {
+                @Override
+                public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
+                    if (response.isSuccessful()) {
+                        JsonObject response2 = response.body();
+                        Log.i(TAG, "response2: " + response2);
+                        JsonArray result = response2.get("result").getAsJsonArray();
+                        JsonObject element1 = result.get(0).getAsJsonObject();
+                        String order_no = element1.get("order_no").getAsString();
+                        Log.d(TAG, "this is the order number: " + order_no);
+
+                        Intent intent = new Intent(MapsActivity.this, PostActivity.class);
+                        intent.putExtra("order_no", order_no);
+                        startActivity(intent);
+                        textView =  findViewById(R.id.post_view);
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<JsonObject> call, Throwable t) {
+                    Log.d(TAG, "the error is: " + t.getMessage());
+                }
+            });
+        Log.d(TAG,"Post button clicked");
+    }
+
+//    public void getResponse(View view) {
+//        String msg="";
+//        String returnFinalDistanceFee="";
+//        String waiting_time_cost_per_min="";
+//        String finalDistanceFee="";
+//        Call<JsonObject> call2 = polyline.priceDetails(msg,returnFinalDistanceFee,waiting_time_cost_per_min,finalDistanceFee);
+//
+//        call2.enqueue(new Callback<JsonObject>() {
+//            @Override
+//            public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
+//                JsonObject response3 = response.body();
+//                JsonArray result = response3.get("result").getAsJsonArray();
+//                JsonObject element2 = result.get(0).getAsJsonObject();
+//
+//                Log.d(TAG,"this is the price details:"+element2);
+//
+//                Intent intent = new Intent(MapsActivity.this,GetActivity.class);
+//                intent.putExtra("msg", msg);
+//                intent.putExtra("returnFinalDistanceFee", returnFinalDistanceFee);
+//                intent.putExtra("waiting_time_cost_per_min", waiting_time_cost_per_min);
+//                intent.putExtra("finalDistanceFee", finalDistanceFee);
+//
+//                startActivity(intent);
+//            }
+//
+//            @Override
+//            public void onFailure(Call<JsonObject> call, Throwable t) {
+//                Log.d(TAG,"the error is:"+t.getMessage());
+//
+//            }
+//        });
+//    }
+}

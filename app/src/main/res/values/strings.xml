@@ -1,4 +1,7 @@
 <resources>
     <string name="app_name">GoogleMaps</string>
     <string name="title_activity_maps">Map</string>
+    <string name="activity2_name">PostActivity</string>
+    <string name="get_request">Get Request</string>
+    <string name="display_get">DISPLAY GET</string>
 </resources>

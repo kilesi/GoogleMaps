@@ -2,18 +2,28 @@ package com.sendy.googlemaps;
 
 import com.google.gson.JsonObject;
 
-import java.util.List;
-
 import retrofit2.Call;
+import retrofit2.http.Body;
 import retrofit2.http.GET;
+import retrofit2.http.POST;
+import retrofit2.http.Query;
 import retrofit2.http.Url;
 
 public interface Polyline {
-
-    String BASE_URL = "https://maps.googleapis.com/directions/";
+    String BASE_URL = "https://maps.googleapis.com/maps/api/directions/";
     //declare http request
-    @GET(/*"maps/api/directions/"+ "?\" + parameters+\"&key=AIzaSyBTpq2aXpU-MsCALXcmCWpNE6-hNZ11mZI"*/)
-
+    @GET(/*""+ "?\" + parameters+\"&key=AIzaSyBTpq2aXpU-MsCALXcmCWpNE6-hNZ11mZI"*/)
     //define a method
-    Call<List<JsonObject>> getpoints(@Url String url);
+    Call<JsonObject> getpoints(@Url String url);
+    //Declare type of request POST
+    @POST()
+    //declare method
+    Call<JsonObject> postOrder(@Url String url, @Body JsonObject body);
+
+//    @GET("/orders")
+//
+//    Call<JsonObject> priceDetails(@Query("msg") String msg,
+//                                  @Query("returnFinalDistanceFee") String returnFinalDistanceFee,
+//                                  @Query("waiting_time_cost_per_min") String waiting_time_cost_per_min,
+//                                  @Query("finalDistanceFee") String finalDistanceFee);
 }

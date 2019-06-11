@@ -26,4 +26,23 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".MapsActivity" />
+   <Button
+       android:layout_width="wrap_content"
+       android:layout_height="wrap_content"
+       android:id="@+id/post_button"
+       android:text="DISPLAY POST"
+       android:layout_alignBottom="@+id/map"
+       android:textColor="#000"
+       android:background="@color/colorPrimary"
+       android:onClick="postResponse"/>
+    <!--<Button-->
+        <!--android:layout_width="wrap_content"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:text="@string/display_get"-->
+        <!--android:id="@+id/get_button"-->
+        <!--android:layout_alignBottom="@+id/map"-->
+        <!--android:layout_alignRight="@+id/post_button"-->
+        <!--android:textColor="#000"-->
+        <!--android:background="@color/colorPrimary"-->
+        <!--android:onClick="getResponse"/>-->
 </RelativeLayout>
