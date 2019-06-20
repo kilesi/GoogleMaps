@@ -13,6 +13,7 @@
     android:layout_height="wrap_content"
     tools:text="TextView"
     tools:context=".PostActivity" />
+
 </RelativeLayout>
 
 

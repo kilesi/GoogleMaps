@@ -1,26 +1,38 @@
 package com.sendy.googlemaps;
 
 import android.Manifest;
+import android.app.AlertDialog;
+import android.app.Dialog;
+import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.graphics.Color;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.location.Location;
-import android.os.AsyncTask;
+import android.location.LocationManager;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Build;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.ActivityCompat.OnRequestPermissionsResultCallback;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.View;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.common.api.Result;
 import com.google.android.gms.common.api.Status;
+import com.google.android.gms.internal.location.zzas;
+import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
@@ -33,24 +45,18 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
+import com.google.android.gms.tasks.Task;
 import com.google.android.libraries.places.api.Places;
 import com.google.android.libraries.places.api.model.Place;
-import com.google.android.libraries.places.api.net.PlacesClient;
 import com.google.android.libraries.places.widget.AutocompleteSupportFragment;
 import com.google.android.libraries.places.widget.listener.PlaceSelectionListener;
 import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.maps.android.PolyUtil;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
-
-import java.lang.reflect.Array;
-import java.text.DecimalFormat;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 
 import retrofit2.Call;
@@ -58,9 +64,8 @@ import retrofit2.Callback;
 import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
-import retrofit2.http.Body;
-import retrofit2.http.GET;
-import retrofit2.http.POST;
+
+import static com.sendy.googlemaps.DatabaseHelper.TABLE_NAME;
 
 public class MapsActivity<points> extends FragmentActivity implements OnMapReadyCallback,
         GoogleApiClient.ConnectionCallbacks,
@@ -68,6 +73,16 @@ public class MapsActivity<points> extends FragmentActivity implements OnMapReady
         LocationListener {
 
     private static final String TAG = "MainActivity";
+
+    private static final String FINE_LOCATION = android.Manifest.permission.ACCESS_FINE_LOCATION;
+    private static final String COARSE_LOCATION = android.Manifest.permission.ACCESS_COARSE_LOCATION;
+    private static final int LOCATION_PERMISSION_REQUEST_CODE = 123;
+    protected static final int REQUEST_CHECK_SETTINGS = 0x1;
+
+    private Boolean mLocationPermissionGranted = false;
+    private FusedLocationProviderClient mFusedLocationProviderClient;
+
+
     private GoogleMap mMap;
     ArrayList<LatLng> MarkerPoints;
     GoogleApiClient mGoogleApiClient;
@@ -75,21 +90,41 @@ public class MapsActivity<points> extends FragmentActivity implements OnMapReady
     Marker mCurrLocationMarker;
     LocationRequest mLocationRequest;
     Place place;
-    Location location;
-    Status status;
+    private TextView viewplaces;
+    Button displayPlaces_button;
     TextView textView;
-    private String encodedRoute;
     private Polyline polyline;
+    SQLiteDatabase db;
+    SQLiteHandler sqLiteHandler;
+
+    Place selectedPlace;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
+
+        displayPlaces_button = findViewById(R.id.button_places);
+        viewplaces = findViewById(R.id.view_visited_places);
         Places.initialize(getApplicationContext(), "AIzaSyBTpq2aXpU-MsCALXcmCWpNE6-hNZ11mZI");
-       //PlacesClient placesClient = Places.createClient(this);
+
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             checkLocationPermission();
         }
+
+        sqLiteHandler = new SQLiteHandler(getApplicationContext());
+
+        displayPlaces_button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                ShowDialog();
+            }
+        });
+
+
+        haveNetworkConnection();
+        getLocationPermission();
 
         // Initializing
         MarkerPoints = new ArrayList<>();
@@ -102,38 +137,26 @@ public class MapsActivity<points> extends FragmentActivity implements OnMapReady
                 getSupportFragmentManager().findFragmentById(R.id.autocomplete_fragment);
         // Specify the types of place data to return.
         autocompleteFragment.setPlaceFields(Arrays.asList(Place.Field.ID, Place.Field.NAME, Place.Field.LAT_LNG));
+
         // Set up a PlaceSelectionListener to handle the response.
         autocompleteFragment.setOnPlaceSelectedListener(new PlaceSelectionListener() {
             @Override
             public void onPlaceSelected(@NonNull Place place1) {
                 //TODO: place marker on selected place.
-//                ArrayList<Place> places = new ArrayList<>();
-//                ArrayList<Object> placeObjects = new ArrayList<>();
+                // ArrayList<Place> places = new ArrayList<>();
                 place = place1;
-                //places.add(place);
-//                placeObjects.addAll(places);
-//                TinyDB tinyDB = new TinyDB(getApplicationContext());
-//                tinyDB.putListObject("places", placeObjects);
-//
-//                // Convert PlaceObjects to PlaceList
-//                ArrayList<Object> retrievedObject = new ArrayList<>();
-//                retrievedObject = tinyDB.getListObject("places", Object.class);
-//
-//                ArrayList<Place> retrievedPlaces = new ArrayList<>();
-//                for (Object object : retrievedObject) {
-//                    retrievedPlaces.add((Place)  object);
-//                }
-//
-//                // on click of action button
-//                String placeName = "";
-//                for (Place place : retrievedPlaces) {
-//                    placeName = place.getName();
-//                }
-                Log.d(TAG, "place:" + place.toString());
+
+                Log.d(TAG, "place:" + place.getName() + place.getLatLng());
+
                 if (place != null) {
                     mMap.clear();
                 }
                 mMap.addMarker(new MarkerOptions().position(place.getLatLng()));
+
+                db = sqLiteHandler.getWritableDatabase();
+                sqLiteHandler.addPlace(place.getName());
+
+
                 getPolyline();
             }
 
@@ -143,28 +166,92 @@ public class MapsActivity<points> extends FragmentActivity implements OnMapReady
                 Log.i(TAG, "An error occurred: " + status);
             }
         });
+
         //create Retrofit object
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl(Polyline.BASE_URL)
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
+
         //Build Api
         polyline = retrofit.create(Polyline.class);
-        postOrders();
+
+        //postOrders();
+    }
+
+    private ArrayList<String> displayPlaces() {
+
+        if (place == null) {
+            Toast.makeText(getApplicationContext(), "select your destination first", Toast.LENGTH_LONG).show();
+            displayPlaces_button.setClickable(false);
+        } else
+            Log.d(TAG, "place is not selected");
+        db = sqLiteHandler.getReadableDatabase();
+
+        Cursor cursor = db.rawQuery("SELECT * FROM " + "places", null);
+
+        ArrayList<String> places = new ArrayList<>();
+
+        if (cursor.getCount() > 0) {
+            for (int i = 0; i < cursor.getCount(); i++) {
+                if (cursor.moveToNext()) {
+                    places.add(cursor.getString(1));
+                }
+                Log.d(TAG, places.toString());
+            }
+        }
+        //String vPlaces = place.getName();
+        //Toast.makeText(getApplicationContext(), "place visited is " + places.toString(), Toast.LENGTH_LONG).show();
+        //Intent intent = new Intent(MapsActivity.this, VisitedPlacesActivity.class);
+
+        // intent.putExtra("Place", vPlaces);
+
+        // setup the alert builder
+
+        //viewplaces.setText(place.getName());
+        cursor.close();
+        db.close();
+        return places;
+    }
+
+
+    public void ShowDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(MapsActivity.this);
+        builder.setTitle("Choose  visited places");
+        builder.setItems(displayPlaces().toArray(new CharSequence[0]), null);
+        builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                if (place != null) {
+                    mMap.clear();
+                }
+                mMap.addMarker(new MarkerOptions().position(place.getLatLng()));
+               // getPolyline();
+            }
+        });
+        builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.cancel();
+            }
+        });
+
+        AlertDialog dialog = builder.create();
+        Log.d(TAG, "places lists" + displayPlaces());
+
+        dialog.show();
     }
 
     public void getPolyline() {
         String str_origin = "origin=" + mLastLocation.getLatitude() + "," + mLastLocation.getLongitude();
-        String str_dest = "destination="+place.getLatLng().latitude + "," + place.getLatLng().longitude;
-        // Sensor enabled
-        String sensor = "sensor=false";
+        String str_dest = "destination=" + place.getLatLng().latitude + "," + place.getLatLng().longitude;
         String output = "json";
         String parameters = str_origin + "&" + str_dest;
         final String url = output + "?" + parameters + "&key=AIzaSyBTpq2aXpU-MsCALXcmCWpNE6-hNZ11mZI";
+
         //call Api method
         Call<JsonObject> call = polyline.getpoints(url);
         Log.w(TAG, "url: " + url);
-
         //call api using empty method
         call.enqueue(new Callback<JsonObject>() {
             @Override
@@ -176,7 +263,6 @@ public class MapsActivity<points> extends FragmentActivity implements OnMapReady
                 Log.w(TAG, "response: " + response1.toString());
                 JsonArray routes = response1.get("routes").getAsJsonArray();
                 JsonArray legs = routes.get(0).getAsJsonObject().get("legs").getAsJsonArray();
-                //JsonArray distance = legs.get(0).getAsJsonObject().get("distance").getAsJsonArray();
                 JsonArray steps = legs.get(0).getAsJsonObject().get("steps").getAsJsonArray();
 
                 JsonObject distance = legs.get(0).getAsJsonObject().get("distance").getAsJsonObject();
@@ -206,33 +292,7 @@ public class MapsActivity<points> extends FragmentActivity implements OnMapReady
 
     }
 
-    public void postOrders() {
-        //declare variable url and initialize with the url provided
-        String url = "https://orderstest.sendyit.com/orders/query_order?apikey=4RNNeyATKN6B6S6XiOyJdPMEJ3oLRKBT";
-        //declare variable body and perform POST operation
-        JsonObject body = new JsonObject();
-        body.addProperty("order_no", "AC57XI813-41B");
-        Call<JsonObject> call1 = polyline.postOrder(url, body);
-        call1.enqueue(new Callback<JsonObject>() {
-            @Override
-            public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
-                if (response.isSuccessful()) {
-                    JsonObject response2 = response.body();
-                    Log.i(TAG, "response2: " + response2);
-                    JsonArray result = response2.get("result").getAsJsonArray();
-                    JsonObject element1 = result.get(0).getAsJsonObject();
-                    String order_no = element1.get("order_no").getAsString();
-                    Log.d(TAG, "this is the order number: " + order_no);
-                }
-            }
 
-            @Override
-            public void onFailure(Call<JsonObject> call, Throwable t) {
-                Log.d(TAG, "the error is: " + t.getMessage());
-            }
-        });
-
-    }
 
     /**
      * Manipulates the map once available.
@@ -253,6 +313,11 @@ public class MapsActivity<points> extends FragmentActivity implements OnMapReady
             buildGoogleApiClient();
             mMap.setMyLocationEnabled(true);
         }
+
+        locationManager();
+
+        Toast.makeText(this, "Map is ready", Toast.LENGTH_LONG).show();
+        //  getLocationPermission();
 
     }
 
@@ -275,8 +340,7 @@ public class MapsActivity<points> extends FragmentActivity implements OnMapReady
         mLocationRequest.setInterval(1000);
         mLocationRequest.setFastestInterval(1000);
         mLocationRequest.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY);
-        if (ContextCompat.checkSelfPermission(this,
-                Manifest.permission.ACCESS_FINE_LOCATION)
+        if (ContextCompat.checkSelfPermission(this, FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED) {
             LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, this);
         }
@@ -319,8 +383,6 @@ public class MapsActivity<points> extends FragmentActivity implements OnMapReady
 
     }
 
-    public static final int MY_PERMISSIONS_REQUEST_LOCATION = 99;
-
     public boolean checkLocationPermission() {
         if (ContextCompat.checkSelfPermission(this,
                 Manifest.permission.ACCESS_FINE_LOCATION)
@@ -332,12 +394,12 @@ public class MapsActivity<points> extends FragmentActivity implements OnMapReady
                 //Prompt the user once explanation has been shown
                 ActivityCompat.requestPermissions(this,
                         new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                        MY_PERMISSIONS_REQUEST_LOCATION);
+                        LOCATION_PERMISSION_REQUEST_CODE);
             } else {
                 // No explanation needed, we can request the permission.
                 ActivityCompat.requestPermissions(this,
                         new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                        MY_PERMISSIONS_REQUEST_LOCATION);
+                        LOCATION_PERMISSION_REQUEST_CODE);
             }
             return false;
         } else {
@@ -346,100 +408,108 @@ public class MapsActivity<points> extends FragmentActivity implements OnMapReady
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode,
-                                           String permissions[], int[] grantResults) {
+    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
         switch (requestCode) {
-            case MY_PERMISSIONS_REQUEST_LOCATION: {
+            case LOCATION_PERMISSION_REQUEST_CODE: {
                 // If request is cancelled, the result arrays are empty.
-                if (grantResults.length > 0
-                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                if (grantResults.length > 0) {
+                    for (int i = 0; i < grantResults.length; i++)
+                        if (grantResults[i] != PackageManager.PERMISSION_GRANTED) {
+                            mLocationPermissionGranted = false;
 
-                    // permission was granted. Do the
-                    // contacts-related task you need to do.
-                    if (ContextCompat.checkSelfPermission(this,
-                            Manifest.permission.ACCESS_FINE_LOCATION)
-                            == PackageManager.PERMISSION_GRANTED) {
-
-                        if (mGoogleApiClient == null) {
-                            buildGoogleApiClient();
+                            return;
                         }
-                        mMap.setMyLocationEnabled(true);
-                    }
-
-                } else {
-
-                    // Permission denied, Disable the functionality that depends on this permission.
-                    Toast.makeText(this, "permission denied", Toast.LENGTH_LONG).show();
                 }
-                return;
-            }
+                mLocationPermissionGranted = true;
+                Toast.makeText(this, "Permission Granted : OnRequest", Toast.LENGTH_SHORT).show();
+                Log.d(TAG, "onRequestPermissionsResult: calling init");
 
+            }
+        }
+
+    }
+
+
+    private void getLocationPermission() {
+
+        String[] permissions = {FINE_LOCATION, COARSE_LOCATION};
+
+        if (ContextCompat.checkSelfPermission(this, FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED) {
+            if (ContextCompat.checkSelfPermission(this, COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                mLocationPermissionGranted = true;
+            } else {
+                // Show rationale and request permission.
+
+                ActivityCompat.requestPermissions(this, permissions, LOCATION_PERMISSION_REQUEST_CODE);
+            }
         }
     }
 
-    public void postResponse(View view) {
-            //declare variable url and initialize with the url provided
-            String url = "https://orderstest.sendyit.com/orders/query_order?apikey=4RNNeyATKN6B6S6XiOyJdPMEJ3oLRKBT";
-            //declare variable body and perform POST operation
-            JsonObject body = new JsonObject();
-            body.addProperty("order_no", "AC57XI813-41B");
-            Call<JsonObject> call1 = polyline.postOrder(url, body);
-            call1.enqueue(new Callback<JsonObject>() {
-                @Override
-                public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
-                    if (response.isSuccessful()) {
-                        JsonObject response2 = response.body();
-                        Log.i(TAG, "response2: " + response2);
-                        JsonArray result = response2.get("result").getAsJsonArray();
-                        JsonObject element1 = result.get(0).getAsJsonObject();
-                        String order_no = element1.get("order_no").getAsString();
-                        Log.d(TAG, "this is the order number: " + order_no);
-
-                        Intent intent = new Intent(MapsActivity.this, PostActivity.class);
-                        intent.putExtra("order_no", order_no);
-                        startActivity(intent);
-                        textView =  findViewById(R.id.post_view);
-                    }
-                }
-
-                @Override
-                public void onFailure(Call<JsonObject> call, Throwable t) {
-                    Log.d(TAG, "the error is: " + t.getMessage());
+    private void locationManager() {
+        LocationManager lm = (LocationManager) getSystemService(LOCATION_SERVICE);
+        if (!lm.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
+                !lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+            // Build the alert dialog
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle("Location Services Not Active");
+            builder.setMessage("Please enable Location Services and GPS");
+            builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialogInterface, int i) {
+                    // Show location settings when the user acknowledges the alert dialog
+                    Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+                    startActivity(intent);
                 }
             });
-        Log.d(TAG,"Post button clicked");
+            Dialog alertDialog = builder.create();
+            alertDialog.setCanceledOnTouchOutside(false);
+            alertDialog.show();
+        }
     }
 
-//    public void getResponse(View view) {
-//        String msg="";
-//        String returnFinalDistanceFee="";
-//        String waiting_time_cost_per_min="";
-//        String finalDistanceFee="";
-//        Call<JsonObject> call2 = polyline.priceDetails(msg,returnFinalDistanceFee,waiting_time_cost_per_min,finalDistanceFee);
-//
-//        call2.enqueue(new Callback<JsonObject>() {
+    private boolean haveNetworkConnection() {
+        boolean haveConnectedWifi = false;
+        boolean haveConnectedMobile = false;
+
+        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo[] netInfo = cm.getAllNetworkInfo();
+        for (NetworkInfo ni : netInfo) {
+            if (ni.getTypeName().equalsIgnoreCase("WIFI"))
+                if (ni.isConnected())
+                    haveConnectedWifi = true;
+            if (ni.getTypeName().equalsIgnoreCase("MOBILE"))
+                if (ni.isConnected())
+                    haveConnectedMobile = true;
+        }
+        return haveConnectedWifi || haveConnectedMobile;
+    }
+//    public void postOrders() {
+//        //declare variable url and initialize with the url provided
+//        String url = "https://orderstest.sendyit.com/orders/query_order?apikey=4RNNeyATKN6B6S6XiOyJdPMEJ3oLRKBT";
+//        //declare variable body and perform POST operation
+//        JsonObject body = new JsonObject();
+//        body.addProperty("order_no", "AC29C3177-D4R");
+//        Call<JsonObject> call1 = polyline.postOrder(url, body);
+//        call1.enqueue(new Callback<JsonObject>() {
 //            @Override
 //            public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
-//                JsonObject response3 = response.body();
-//                JsonArray result = response3.get("result").getAsJsonArray();
-//                JsonObject element2 = result.get(0).getAsJsonObject();
-//
-//                Log.d(TAG,"this is the price details:"+element2);
-//
-//                Intent intent = new Intent(MapsActivity.this,GetActivity.class);
-//                intent.putExtra("msg", msg);
-//                intent.putExtra("returnFinalDistanceFee", returnFinalDistanceFee);
-//                intent.putExtra("waiting_time_cost_per_min", waiting_time_cost_per_min);
-//                intent.putExtra("finalDistanceFee", finalDistanceFee);
-//
-//                startActivity(intent);
+//                if (response.isSuccessful()) {
+//                    JsonObject response2 = response.body();
+//                    Log.i(TAG, "response2: " + response2);
+//                    JsonArray result = response2.get("result").getAsJsonArray();
+//                    JsonObject element1 = result.get(0).getAsJsonObject();
+//                    String order_no = element1.get("order_no").getAsString();
+//                    Log.d(TAG, "this is the order number: " + order_no);
+//                }
 //            }
 //
 //            @Override
 //            public void onFailure(Call<JsonObject> call, Throwable t) {
-//                Log.d(TAG,"the error is:"+t.getMessage());
-//
+//                Log.d(TAG, "the error is: " + t.getMessage());
 //            }
 //        });
+//
 //    }
+
+
 }

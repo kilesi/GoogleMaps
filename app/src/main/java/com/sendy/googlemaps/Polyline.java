@@ -6,7 +6,6 @@ import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.GET;
 import retrofit2.http.POST;
-import retrofit2.http.Query;
 import retrofit2.http.Url;
 
 public interface Polyline {
@@ -20,10 +19,4 @@ public interface Polyline {
     //declare method
     Call<JsonObject> postOrder(@Url String url, @Body JsonObject body);
 
-//    @GET("/orders")
-//
-//    Call<JsonObject> priceDetails(@Query("msg") String msg,
-//                                  @Query("returnFinalDistanceFee") String returnFinalDistanceFee,
-//                                  @Query("waiting_time_cost_per_min") String waiting_time_cost_per_min,
-//                                  @Query("finalDistanceFee") String finalDistanceFee);
 }
