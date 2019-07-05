@@ -6,7 +6,7 @@ import android.util.Log;
 
 public class SessionManager {
     // LogCat tag
-    private static String TAG = SessionManager.class.getSimpleName();
+    private static String TAG = "MainActivity";
 
     // Shared Preferences
     SharedPreferences pref;

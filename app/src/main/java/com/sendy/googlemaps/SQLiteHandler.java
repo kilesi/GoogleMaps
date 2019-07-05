@@ -30,6 +30,8 @@ public class SQLiteHandler extends SQLiteOpenHelper {
     private static final String KEY_PASSWORD = "password";
     private static final String KEY_PLACE_NAME = "place_name";
 
+    private static final String KEY_LATLNG = "lat_lng";
+
     public SQLiteHandler(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
     }
@@ -43,7 +45,7 @@ public class SQLiteHandler extends SQLiteOpenHelper {
                 + KEY_PASSWORD + " TEXT" + ")";
 
         String CREATE_PLACES_TABLE = "CREATE TABLE " + TABLE_PLACES + "("
-                + KEY_ID + " INTEGER PRIMARY KEY," + KEY_PLACE_NAME + " TEXT" + ")";
+                + KEY_ID + " INTEGER PRIMARY KEY," + KEY_PLACE_NAME + " TEXT," + KEY_LATLNG + " FLOAT" + ")";
 
         db.execSQL(CREATE_LOGIN_TABLE);
         db.execSQL(CREATE_PLACES_TABLE);

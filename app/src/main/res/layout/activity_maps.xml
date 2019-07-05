@@ -3,9 +3,9 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
     android:paddingLeft="16dp"
-    android:paddingRight="16dp"
-    android:orientation="vertical">
+    android:paddingRight="16dp">
 
     <android.support.v7.widget.CardView
         android:id="@+id/idCardView"
@@ -29,45 +29,53 @@
         android:name="com.google.android.gms.maps.SupportMapFragment"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        tools:context=".MapsActivity"
-        android:layout_below="@+id/idCardView"/>
-        <Button
-            android:id="@+id/post_button"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignBottom="@+id/map"
-            android:background="@color/colorPrimary"
-            android:gravity="center"
-            android:onClick="postResponse"
-            android:padding="5dp"
-            android:text="display post"
-            android:textColor="#000"
-            android:layout_alignParentRight="true"
-            android:layout_marginStart="12dp"
-            android:layout_marginRight="12dp"
-            android:layout_marginBottom="12dp"/>
+        android:layout_below="@+id/idCardView"
+        tools:context=".MapsActivity" />
 
-        <Button
-            android:id="@+id/button_places"
+    <com.getbase.floatingactionbutton.FloatingActionsMenu
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentBottom="true"
+        app:fab_addButtonPlusIconColor="@color/white"
+        app:fab_colorNormal="@color/colorAccent"
+        app:fab_colorPressed="@color/colorAccent"
+        app:fab_icon="@drawable/ic_add_circle_pink"
+        app:fab_labelStyle="@style/custom_fab"
+        android:padding="5dp">
+
+        <com.getbase.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fab_visitedPlaces"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignBottom="@+id/map"
-            android:layout_marginRight="24dp"
-            android:layout_toRightOf="@id/post_button"
-            android:background="@android:color/holo_blue_dark"
-            android:gravity="center"
-            android:padding="5dp"
-            android:text="Visited places"
-            android:textColor="#000"
-            android:textSize="14sp"
-            android:layout_alignParentLeft="true"
-            android:layout_marginEnd="12dp"
-            android:layout_marginLeft="12dp"
-            android:layout_marginBottom="12dp"/>
-        <TextView
-            android:id="@+id/view_visited_places"
+            app:fab_colorNormal="@color/white"
+            android:padding="4dp"
+            app:fab_colorPressed="@color/white"
+            app:fab_icon="@drawable/ic_add_pink"
+            app:fab_size="mini"
+            app:fab_title="Places"
+            android:paddingVertical="4dp"/>
+
+        <com.getbase.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fab_postOrder"
             android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:layout_alignBottom="@+id/map"/>
+            android:layout_height="wrap_content"
+            app:fab_colorNormal="@color/white"
+            app:fab_colorPressed="@color/white"
+            app:fab_icon="@drawable/ic_add_pink"
+            app:fab_size="mini"
+            app:fab_title="Post Orders"
+            android:textAlignment="textStart"/>
+        <com.getbase.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fab_recyclerView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:fab_colorNormal="@color/white"
+            app:fab_colorPressed="@color/white"
+            app:fab_icon="@drawable/ic_add_pink"
+            app:fab_size="mini"
+            app:fab_title="RecyclerView" />
+    </com.getbase.floatingactionbutton.FloatingActionsMenu>
+
 
 </RelativeLayout>

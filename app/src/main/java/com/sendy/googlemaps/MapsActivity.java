@@ -28,6 +28,7 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.getbase.floatingactionbutton.FloatingActionButton;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.Status;
@@ -55,6 +56,7 @@ import com.google.gson.JsonObject;
 import com.google.maps.android.PolyUtil;
 
 import java.io.File;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -79,6 +81,8 @@ public class MapsActivity<points> extends FragmentActivity implements OnMapReady
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 123;
     protected static final int REQUEST_CHECK_SETTINGS = 0x1;
 
+    private static ArrayList<String> places = new ArrayList<>();
+
     private Boolean mLocationPermissionGranted = false;
     private FusedLocationProviderClient mFusedLocationProviderClient;
 
@@ -90,22 +94,43 @@ public class MapsActivity<points> extends FragmentActivity implements OnMapReady
     Marker mCurrLocationMarker;
     LocationRequest mLocationRequest;
     Place place;
-    private TextView viewplaces;
-    Button displayPlaces_button;
-    TextView textView;
     private Polyline polyline;
     SQLiteDatabase db;
     SQLiteHandler sqLiteHandler;
-
-    Place selectedPlace;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
 
-        displayPlaces_button = findViewById(R.id.button_places);
-        viewplaces = findViewById(R.id.view_visited_places);
+        FloatingActionButton dialog = findViewById(R.id.fab_visitedPlaces);
+
+        dialog.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                ShowDialog();
+            }
+        });
+
+        FloatingActionButton recyclerView = findViewById(R.id.fab_recyclerView);
+
+        recyclerView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                //Toast.makeText(MapsActivity.this, "Places yet to be loaded", Toast.LENGTH_LONG).show();
+                recyclerViewPlaces();
+            }
+        });
+
+        FloatingActionButton orders = findViewById(R.id.fab_postOrder);
+
+        orders.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                //postOrders()
+            }
+        });
+
         Places.initialize(getApplicationContext(), "AIzaSyBTpq2aXpU-MsCALXcmCWpNE6-hNZ11mZI");
 
 
@@ -114,14 +139,6 @@ public class MapsActivity<points> extends FragmentActivity implements OnMapReady
         }
 
         sqLiteHandler = new SQLiteHandler(getApplicationContext());
-
-        displayPlaces_button.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                ShowDialog();
-            }
-        });
-
 
         haveNetworkConnection();
         getLocationPermission();
@@ -154,8 +171,7 @@ public class MapsActivity<points> extends FragmentActivity implements OnMapReady
                 mMap.addMarker(new MarkerOptions().position(place.getLatLng()));
 
                 db = sqLiteHandler.getWritableDatabase();
-                sqLiteHandler.addPlace(place.getName());
-
+                sqLiteHandler.addPlace(place.getName() + place.getLatLng().toString());
 
                 getPolyline();
             }
@@ -179,18 +195,19 @@ public class MapsActivity<points> extends FragmentActivity implements OnMapReady
         //postOrders();
     }
 
+
     private ArrayList<String> displayPlaces() {
 
         if (place == null) {
-            Toast.makeText(getApplicationContext(), "select your destination first", Toast.LENGTH_LONG).show();
-            displayPlaces_button.setClickable(false);
+            //Toast.makeText(getApplicationContext(), "select your destination first", Toast.LENGTH_LONG).show();
+            //displayPlaces_button.setClickable(false);
         } else
             Log.d(TAG, "place is not selected");
         db = sqLiteHandler.getReadableDatabase();
 
         Cursor cursor = db.rawQuery("SELECT * FROM " + "places", null);
 
-        ArrayList<String> places = new ArrayList<>();
+        //ArrayList<String> places = new ArrayList<>();
 
         if (cursor.getCount() > 0) {
             for (int i = 0; i < cursor.getCount(); i++) {
@@ -200,33 +217,22 @@ public class MapsActivity<points> extends FragmentActivity implements OnMapReady
                 Log.d(TAG, places.toString());
             }
         }
-        //String vPlaces = place.getName();
-        //Toast.makeText(getApplicationContext(), "place visited is " + places.toString(), Toast.LENGTH_LONG).show();
-        //Intent intent = new Intent(MapsActivity.this, VisitedPlacesActivity.class);
-
-        // intent.putExtra("Place", vPlaces);
-
-        // setup the alert builder
-
-        //viewplaces.setText(place.getName());
         cursor.close();
         db.close();
         return places;
     }
 
-
     public void ShowDialog() {
+
         AlertDialog.Builder builder = new AlertDialog.Builder(MapsActivity.this);
         builder.setTitle("Choose  visited places");
         builder.setItems(displayPlaces().toArray(new CharSequence[0]), null);
         builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
             @Override
-            public void onClick(DialogInterface dialog, int which) {
-                if (place != null) {
-                    mMap.clear();
-                }
-                mMap.addMarker(new MarkerOptions().position(place.getLatLng()));
-               // getPolyline();
+            public void onClick(DialogInterface dialog, int selectedPlace) {
+
+                getPolyline();
+
             }
         });
         builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
@@ -240,6 +246,16 @@ public class MapsActivity<points> extends FragmentActivity implements OnMapReady
         Log.d(TAG, "places lists" + displayPlaces());
 
         dialog.show();
+    }
+
+    private void recyclerViewPlaces() {
+        displayPlaces();
+
+        Intent intent = new Intent(MapsActivity.this, VisitedPlaces.class);
+
+        intent.putStringArrayListExtra("selectedPlaces", places);
+
+        startActivity(intent);
     }
 
     public void getPolyline() {
@@ -291,7 +307,6 @@ public class MapsActivity<points> extends FragmentActivity implements OnMapReady
         });
 
     }
-
 
 
     /**
