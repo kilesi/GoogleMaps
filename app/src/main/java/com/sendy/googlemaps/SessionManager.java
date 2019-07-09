@@ -28,6 +28,14 @@ public class SessionManager {
         editor = pref.edit();
     }
 
+    public void setOrigin(String origin) {
+        editor.putString("origin", origin).apply();
+    }
+
+    public String getOrigin() {
+        return pref.getString("origin", "");
+    }
+
     public void setLogin(boolean isLoggedIn) {
 
         editor.putBoolean(KEY_IS_LOGGED_IN, isLoggedIn);

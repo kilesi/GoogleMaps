@@ -28,9 +28,12 @@ public class SQLiteHandler extends SQLiteOpenHelper {
     private static final String KEY_NAME = "name";
     private static final String KEY_EMAIL = "email";
     private static final String KEY_PASSWORD = "password";
-    private static final String KEY_PLACE_NAME = "place_name";
 
-    private static final String KEY_LATLNG = "lat_lng";
+    //places Table columns names
+    private static final String KEY_PLACE_NAME = "place_name";
+    private static final String KEY_LONGITUDE = "longitude";
+    private static final String KEY_LATITUDE = "latitude";
+    private static final String KEY_PATH = "path";
 
     public SQLiteHandler(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
@@ -40,12 +43,16 @@ public class SQLiteHandler extends SQLiteOpenHelper {
     @Override
     public void onCreate(SQLiteDatabase db) {
         String CREATE_LOGIN_TABLE = "CREATE TABLE " + TABLE_USER + "("
-                + KEY_ID + " INTEGER PRIMARY KEY," + KEY_NAME + " TEXT,"
+                + KEY_ID + " INTEGER PRIMARY KEY,"
+                + KEY_NAME + " TEXT,"
                 + KEY_EMAIL + " TEXT UNIQUE,"
                 + KEY_PASSWORD + " TEXT" + ")";
 
         String CREATE_PLACES_TABLE = "CREATE TABLE " + TABLE_PLACES + "("
-                + KEY_ID + " INTEGER PRIMARY KEY," + KEY_PLACE_NAME + " TEXT," + KEY_LATLNG + " FLOAT" + ")";
+                + KEY_ID + " INTEGER PRIMARY KEY,"
+                + KEY_PLACE_NAME + " TEXT,"
+                + KEY_LATITUDE + " TEXT,"
+                + KEY_LONGITUDE + " TEXT" + ")";
 
         db.execSQL(CREATE_LOGIN_TABLE);
         db.execSQL(CREATE_PLACES_TABLE);
@@ -82,11 +89,14 @@ public class SQLiteHandler extends SQLiteOpenHelper {
         Log.d(TAG, "New user inserted into sqlite: " + id);
     }
 
-    public void addPlace(String placeName) {
+    public void addPlace(String placeName, String latitude, String longitude) {
         SQLiteDatabase db = this.getWritableDatabase();
 
         ContentValues contentValues = new ContentValues();
         contentValues.put(KEY_PLACE_NAME, placeName);
+        contentValues.put(KEY_LATITUDE, latitude);
+        contentValues.put(KEY_LONGITUDE, longitude);
+
 
         long id = db.insert(TABLE_PLACES, null, contentValues);
         db.close();

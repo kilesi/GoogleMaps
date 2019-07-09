@@ -18,21 +18,16 @@ import android.os.Bundle;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
-import android.support.v4.app.ActivityCompat.OnRequestPermissionsResultCallback;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.View;
-import android.widget.ArrayAdapter;
-import android.widget.Button;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.getbase.floatingactionbutton.FloatingActionButton;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.Status;
-import com.google.android.gms.internal.location.zzas;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
@@ -46,7 +41,6 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
-import com.google.android.gms.tasks.Task;
 import com.google.android.libraries.places.api.Places;
 import com.google.android.libraries.places.api.model.Place;
 import com.google.android.libraries.places.widget.AutocompleteSupportFragment;
@@ -55,8 +49,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.maps.android.PolyUtil;
 
-import java.io.File;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -66,8 +58,6 @@ import retrofit2.Callback;
 import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
-
-import static com.sendy.googlemaps.DatabaseHelper.TABLE_NAME;
 
 public class MapsActivity<points> extends FragmentActivity implements OnMapReadyCallback,
         GoogleApiClient.ConnectionCallbacks,
@@ -97,20 +87,22 @@ public class MapsActivity<points> extends FragmentActivity implements OnMapReady
     private Polyline polyline;
     SQLiteDatabase db;
     SQLiteHandler sqLiteHandler;
+    SessionManager sessionManager;
+    String lat, longi;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
 
-        FloatingActionButton dialog = findViewById(R.id.fab_visitedPlaces);
-
-        dialog.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                ShowDialog();
-            }
-        });
+//        FloatingActionButton dialog = findViewById(R.id.fab_visitedPlaces);
+//
+//        dialog.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                ShowDialog();
+//            }
+//        });
 
         FloatingActionButton recyclerView = findViewById(R.id.fab_recyclerView);
 
@@ -121,15 +113,17 @@ public class MapsActivity<points> extends FragmentActivity implements OnMapReady
                 recyclerViewPlaces();
             }
         });
+        Intent intent = getIntent();
+        sessionManager = new SessionManager(getApplicationContext());
 
-        FloatingActionButton orders = findViewById(R.id.fab_postOrder);
-
-        orders.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                //postOrders()
-            }
-        });
+//        FloatingActionButton orders = findViewById(R.id.fab_postOrder);
+//
+//        orders.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                //postOrders()
+//            }
+//        });
 
         Places.initialize(getApplicationContext(), "AIzaSyBTpq2aXpU-MsCALXcmCWpNE6-hNZ11mZI");
 
@@ -155,6 +149,46 @@ public class MapsActivity<points> extends FragmentActivity implements OnMapReady
         // Specify the types of place data to return.
         autocompleteFragment.setPlaceFields(Arrays.asList(Place.Field.ID, Place.Field.NAME, Place.Field.LAT_LNG));
 
+        if (intent != null) {
+            if  (intent.getStringExtra("Current") != null) {
+                Log.d("Current", intent.getStringExtra("Current"));
+                String placeName = intent.getStringExtra("Current");
+                db = sqLiteHandler.getReadableDatabase();
+
+                Cursor cursor = db.rawQuery("SELECT * FROM " + "places" + " WHERE place_name = " + "'" + placeName + "'", null);
+
+                //ArrayList<String> places = new ArrayList<>();
+
+                if (cursor.getCount() > 0) {
+                    for (int i = 0; i < cursor.getCount(); i++) {
+                        if (cursor.moveToNext()) {
+                            lat = cursor.getString(2);
+                            longi = cursor.getString(3);
+                        }
+//                        Log.d(TAG, places.toString());
+                    }
+                }
+                cursor.close();
+                db.close();
+
+                Log.d("Orig", sessionManager.getOrigin());
+                Log.d("Origi", lat);
+                Log.d("Origin", longi);
+
+                //create Retrofit object
+                Retrofit retrofit = new Retrofit.Builder()
+                        .baseUrl(Polyline.BASE_URL)
+                        .addConverterFactory(GsonConverterFactory.create())
+                        .build();
+
+                //Build Api
+                polyline = retrofit.create(Polyline.class);
+
+                getPolyline(sessionManager.getOrigin(), lat, longi);
+            }
+        }
+
+//        autocompleteFragment.setText("KISUMU");
         // Set up a PlaceSelectionListener to handle the response.
         autocompleteFragment.setOnPlaceSelectedListener(new PlaceSelectionListener() {
             @Override
@@ -171,9 +205,16 @@ public class MapsActivity<points> extends FragmentActivity implements OnMapReady
                 mMap.addMarker(new MarkerOptions().position(place.getLatLng()));
 
                 db = sqLiteHandler.getWritableDatabase();
-                sqLiteHandler.addPlace(place.getName() + place.getLatLng().toString());
+                //sqLiteHandler.addPlace(place.getName() + place.getLatLng().toString());
+                sqLiteHandler.addPlace(place.getName(), String.valueOf(place.getLatLng().latitude),
+                        String.valueOf(place.getLatLng().longitude));
 
-                getPolyline();
+                String origin = "origin=" + mLastLocation.getLatitude() + "," + mLastLocation.getLongitude();
+                sessionManager.setOrigin(origin);
+
+                getPolyline(origin, String.valueOf(place.getLatLng().latitude), String.valueOf(
+                        place.getLatLng().longitude
+                ));
             }
 
             @Override
@@ -182,6 +223,7 @@ public class MapsActivity<points> extends FragmentActivity implements OnMapReady
                 Log.i(TAG, "An error occurred: " + status);
             }
         });
+
 
         //create Retrofit object
         Retrofit retrofit = new Retrofit.Builder()
@@ -231,7 +273,7 @@ public class MapsActivity<points> extends FragmentActivity implements OnMapReady
             @Override
             public void onClick(DialogInterface dialog, int selectedPlace) {
 
-                getPolyline();
+//                getPolyline();
 
             }
         });
@@ -258,16 +300,15 @@ public class MapsActivity<points> extends FragmentActivity implements OnMapReady
         startActivity(intent);
     }
 
-    public void getPolyline() {
-        String str_origin = "origin=" + mLastLocation.getLatitude() + "," + mLastLocation.getLongitude();
-        String str_dest = "destination=" + place.getLatLng().latitude + "," + place.getLatLng().longitude;
+    public void getPolyline(String origin, String latitude, String longitude) {
+        String str_dest = "destination=" + latitude + "," + longitude;
         String output = "json";
-        String parameters = str_origin + "&" + str_dest;
+        String parameters = origin + "&" + str_dest;
         final String url = output + "?" + parameters + "&key=AIzaSyBTpq2aXpU-MsCALXcmCWpNE6-hNZ11mZI";
-
+        Log.w(TAG, "url: " + url);
         //call Api method
         Call<JsonObject> call = polyline.getpoints(url);
-        Log.w(TAG, "url: " + url);
+
         //call api using empty method
         call.enqueue(new Callback<JsonObject>() {
             @Override

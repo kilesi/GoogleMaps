@@ -32,50 +32,52 @@
         android:layout_below="@+id/idCardView"
         tools:context=".MapsActivity" />
 
-    <com.getbase.floatingactionbutton.FloatingActionsMenu
+    <com.getbase.floatingactionbutton.FloatingActionButton
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentEnd="true"
         android:layout_alignParentBottom="true"
         app:fab_addButtonPlusIconColor="@color/white"
-        app:fab_colorNormal="@color/colorAccent"
-        app:fab_colorPressed="@color/colorAccent"
-        app:fab_icon="@drawable/ic_add_circle_pink"
         app:fab_labelStyle="@style/custom_fab"
-        android:padding="5dp">
+        android:padding="5dp"
+        android:id="@+id/fab_recyclerView"
+        app:fab_colorNormal="@color/white"
+        app:fab_colorPressed="@color/white"
+        app:fab_icon="@drawable/ic_add_pink"
+        app:fab_size="normal"/>
 
-        <com.getbase.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fab_visitedPlaces"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:fab_colorNormal="@color/white"
-            android:padding="4dp"
-            app:fab_colorPressed="@color/white"
-            app:fab_icon="@drawable/ic_add_pink"
-            app:fab_size="mini"
-            app:fab_title="Places"
-            android:paddingVertical="4dp"/>
+        <!--<com.getbase.floatingactionbutton.FloatingActionButton-->
+            <!--android:id="@+id/fab_visitedPlaces"-->
+            <!--android:layout_width="wrap_content"-->
+            <!--android:layout_height="wrap_content"-->
+            <!--app:fab_colorNormal="@color/white"-->
+            <!--android:padding="4dp"-->
+            <!--app:fab_colorPressed="@color/white"-->
+            <!--app:fab_icon="@drawable/ic_add_pink"-->
+            <!--app:fab_size="mini"-->
+            <!--app:fab_title="Places"-->
+            <!--android:paddingVertical="4dp"/>-->
 
-        <com.getbase.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fab_postOrder"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:fab_colorNormal="@color/white"
-            app:fab_colorPressed="@color/white"
-            app:fab_icon="@drawable/ic_add_pink"
-            app:fab_size="mini"
-            app:fab_title="Post Orders"
-            android:textAlignment="textStart"/>
-        <com.getbase.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fab_recyclerView"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:fab_colorNormal="@color/white"
-            app:fab_colorPressed="@color/white"
-            app:fab_icon="@drawable/ic_add_pink"
-            app:fab_size="mini"
-            app:fab_title="RecyclerView" />
-    </com.getbase.floatingactionbutton.FloatingActionsMenu>
+        <!--<com.getbase.floatingactionbutton.FloatingActionButton-->
+            <!--android:id="@+id/fab_postOrder"-->
+            <!--android:layout_width="wrap_content"-->
+            <!--android:layout_height="wrap_content"-->
+            <!--app:fab_colorNormal="@color/white"-->
+            <!--app:fab_colorPressed="@color/white"-->
+            <!--app:fab_icon="@drawable/ic_add_pink"-->
+            <!--app:fab_size="mini"-->
+            <!--app:fab_title="Post Orders"-->
+            <!--android:textAlignment="textStart"/>-->
+        <!--<com.getbase.floatingactionbutton.FloatingActionButton-->
+            <!--android:id="@+id/fab_recyclerView"-->
+            <!--android:layout_width="wrap_content"-->
+            <!--android:layout_height="wrap_content"-->
+            <!--app:fab_colorNormal="@color/white"-->
+            <!--app:fab_colorPressed="@color/white"-->
+            <!--app:fab_icon="@drawable/ic_add_pink"-->
+            <!--app:fab_size="mini"-->
+            <!--app:fab_title="RecyclerView" />-->
+    <!--</com.getbase.floatingactionbutton.FloatingActionsMenu>-->
 
 
 </RelativeLayout>

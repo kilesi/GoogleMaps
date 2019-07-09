@@ -1,12 +1,15 @@
 package com.sendy.googlemaps;
 
+import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.helper.ItemTouchHelper;
 import android.util.Log;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -21,6 +24,12 @@ public class VisitedPlaces extends AppCompatActivity {
     //member variable for the recyclerview
     private RecyclerView mRecyclerView;
     private PlacesListAdapter mAdapter;
+    private ArrayList<String> placeslist = new ArrayList<>();
+    Context context;
+
+    private static SQLiteDatabase db;
+    private static SQLiteHandler sqLiteHandler;
+
 
 
     @Override
@@ -32,6 +41,8 @@ public class VisitedPlaces extends AppCompatActivity {
 
         Log.d(TAG,"places list"+placeslist);
 
+
+
             //create a RecyclerView
 
             // Get a handle to the RecyclerView.
@@ -42,9 +53,35 @@ public class VisitedPlaces extends AppCompatActivity {
             // Connect the adapter with the RecyclerView.
         mRecyclerView.setAdapter(mAdapter);
             // Give the RecyclerView a default layout manager.
-        mRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+        mRecyclerView.setLayoutManager(new LinearLayoutManager(context));
         Log.d(TAG, placeslist.toString());
+        new ItemTouchHelper(itemTouchHelperCallback).attachToRecyclerView(mRecyclerView);
     }
 
+    ItemTouchHelper.SimpleCallback itemTouchHelperCallback = new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
+        @Override
+        public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder viewHolder1) {
+            return false;
+        }
+
+        @Override
+        public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int i) {
+
+
+            if (placeslist.size()>1){
+                placeslist.remove(viewHolder.getAdapterPosition());
+               // mAdapter.notifyDataSetChanged();
+                mAdapter.notifyItemRemoved(i);
+                mAdapter.notifyItemRangeChanged(i, placeslist.size());
+            }
+            else {
+                Toast.makeText(getApplicationContext(),"the list is less than 1",Toast.LENGTH_LONG);
+            }
+           // mAdapter.notifyDataSetChanged();
+            mAdapter.notifyItemRemoved(i);
+
+
+        }
+    };
 
 }
