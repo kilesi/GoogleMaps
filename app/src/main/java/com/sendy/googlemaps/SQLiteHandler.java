@@ -10,7 +10,7 @@ import android.util.Log;
 import java.util.HashMap;
 
 public class SQLiteHandler extends SQLiteOpenHelper {
-    private static final String TAG = SQLiteHandler.class.getSimpleName();
+    private static final String TAG = "MainActivity";
 
     // All Static variables
     // Database Version
@@ -21,6 +21,7 @@ public class SQLiteHandler extends SQLiteOpenHelper {
 
     // Login table name
     private static final String TABLE_USER = "user";
+    //places table name
     private static final String TABLE_PLACES = "places";
 
     // Login Table Columns names
@@ -33,6 +34,7 @@ public class SQLiteHandler extends SQLiteOpenHelper {
     private static final String KEY_PLACE_NAME = "place_name";
     private static final String KEY_LONGITUDE = "longitude";
     private static final String KEY_LATITUDE = "latitude";
+
 
     public SQLiteHandler(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
@@ -88,6 +90,7 @@ public class SQLiteHandler extends SQLiteOpenHelper {
         Log.d(TAG, "New user inserted into sqlite: " + id);
     }
 
+            //save route instead of latlng.
     public void addPlace(String placeName, String latitude, String longitude) {
         SQLiteDatabase db = this.getWritableDatabase();
 
@@ -100,6 +103,7 @@ public class SQLiteHandler extends SQLiteOpenHelper {
         long id = db.insert(TABLE_PLACES, null, contentValues);
         db.close();
 
+       // Log.d(TAG,"List of latlng "+ route);
         Log.d(TAG, "New Place added");
     }
 

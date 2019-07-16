@@ -89,6 +89,7 @@ public class MapsActivity<points> extends FragmentActivity implements OnMapReady
     SQLiteHandler sqLiteHandler;
     SessionManager sessionManager;
     String lat, longi;
+    String route;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -242,8 +243,7 @@ public class MapsActivity<points> extends FragmentActivity implements OnMapReady
     private ArrayList<String> displayPlaces() {
 
         if (place == null) {
-            //Toast.makeText(getApplicationContext(), "select your destination first", Toast.LENGTH_LONG).show();
-            //displayPlaces_button.setClickable(false);
+
         } else
             Log.d(TAG, "place is not selected");
         db = sqLiteHandler.getReadableDatabase();
