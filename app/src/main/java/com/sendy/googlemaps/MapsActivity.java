@@ -149,8 +149,9 @@ public class MapsActivity<points> extends FragmentActivity implements OnMapReady
         // Specify the types of place data to return.
         autocompleteFragment.setPlaceFields(Arrays.asList(Place.Field.ID, Place.Field.NAME, Place.Field.LAT_LNG));
 
+
         if (intent != null) {
-            if  (intent.getStringExtra("Current") != null) {
+           if  (intent.getStringExtra("Current") != null) {
                 Log.d("Current", intent.getStringExtra("Current"));
                 String placeName = intent.getStringExtra("Current");
                 db = sqLiteHandler.getReadableDatabase();
@@ -165,7 +166,7 @@ public class MapsActivity<points> extends FragmentActivity implements OnMapReady
                             lat = cursor.getString(2);
                             longi = cursor.getString(3);
                         }
-//                        Log.d(TAG, places.toString());
+                       Log.d(TAG, places.toString());
                     }
                 }
                 cursor.close();
@@ -250,8 +251,12 @@ public class MapsActivity<points> extends FragmentActivity implements OnMapReady
         Cursor cursor = db.rawQuery("SELECT * FROM " + "places", null);
 
         //ArrayList<String> places = new ArrayList<>();
+            Log.d(TAG, "place is not selected");
+            Log.d("Cursor Count",Integer.toString(cursor.getCount()));
+
 
         if (cursor.getCount() > 0) {
+            places.clear();
             for (int i = 0; i < cursor.getCount(); i++) {
                 if (cursor.moveToNext()) {
                     places.add(cursor.getString(1));
@@ -260,7 +265,6 @@ public class MapsActivity<points> extends FragmentActivity implements OnMapReady
             }
         }
         cursor.close();
-        db.close();
         return places;
     }
 
@@ -297,6 +301,7 @@ public class MapsActivity<points> extends FragmentActivity implements OnMapReady
 
         intent.putStringArrayListExtra("selectedPlaces", places);
 
+       // finish();
         startActivity(intent);
     }
 
@@ -330,8 +335,8 @@ public class MapsActivity<points> extends FragmentActivity implements OnMapReady
                 for (int i = 0; i < steps.size(); i++) {
                     JsonObject step = steps.get(i).getAsJsonObject();
                     JsonObject polyline = step.get("polyline").getAsJsonObject();
-                    String encoded = polyline.get("points").getAsString();
-                    latlng.addAll(PolyUtil.decode(encoded));
+                    String route = polyline.get("points").getAsString();
+                    latlng.addAll(PolyUtil.decode(route));
                 }
                 Toast.makeText(getApplicationContext(), "The distance is" + parseDistance + " and travel time is" + parseTime, Toast.LENGTH_LONG).show();
                 lineOptions.addAll(latlng);

@@ -46,7 +46,7 @@ public class PlacesListAdapter extends RecyclerView.Adapter<PlacesListAdapter.Pl
             placesViewHolder.placeItemView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    Toast.makeText(context, mCurrent,Toast.LENGTH_LONG).show();
+                    //Toast.makeText(context, mCurrent,Toast.LENGTH_LONG).show();
 
 //                Methods methods = new Methods();
 //                methods.getPolyline();

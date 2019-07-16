@@ -33,7 +33,6 @@ public class SQLiteHandler extends SQLiteOpenHelper {
     private static final String KEY_PLACE_NAME = "place_name";
     private static final String KEY_LONGITUDE = "longitude";
     private static final String KEY_LATITUDE = "latitude";
-    private static final String KEY_PATH = "path";
 
     public SQLiteHandler(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
@@ -50,7 +49,7 @@ public class SQLiteHandler extends SQLiteOpenHelper {
 
         String CREATE_PLACES_TABLE = "CREATE TABLE " + TABLE_PLACES + "("
                 + KEY_ID + " INTEGER PRIMARY KEY,"
-                + KEY_PLACE_NAME + " TEXT,"
+                + KEY_PLACE_NAME + " TEXT UNIQUE,"
                 + KEY_LATITUDE + " TEXT,"
                 + KEY_LONGITUDE + " TEXT" + ")";
 

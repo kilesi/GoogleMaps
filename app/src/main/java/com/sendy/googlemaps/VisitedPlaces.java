@@ -66,21 +66,16 @@ public class VisitedPlaces extends AppCompatActivity {
 
         @Override
         public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int i) {
-
-
             if (placeslist.size()>1){
-                placeslist.remove(viewHolder.getAdapterPosition());
-               // mAdapter.notifyDataSetChanged();
+                placeslist.remove(i);
                 mAdapter.notifyItemRemoved(i);
                 mAdapter.notifyItemRangeChanged(i, placeslist.size());
             }
             else {
                 Toast.makeText(getApplicationContext(),"the list is less than 1",Toast.LENGTH_LONG);
             }
-           // mAdapter.notifyDataSetChanged();
             mAdapter.notifyItemRemoved(i);
-
-
+            mAdapter.notifyDataSetChanged();
         }
     };
 
