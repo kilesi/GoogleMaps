@@ -20,10 +20,14 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
+
         <activity
             android:name=".VisitedPlaces"
-            android:label="@string/visitedplaces"
-            android:parentActivityName=".MapsActivity"></activity>
+            android:label="@string/visitedplaces">
+
+            <!-- android:parentActivityName=".MapsActivity" -->
+
+        </activity>
         <activity android:name=".RegisterActivity" />
         <activity android:name=".LoginActivity">
             <intent-filter>

@@ -32,8 +32,9 @@ public class SQLiteHandler extends SQLiteOpenHelper {
 
     //places Table columns names
     private static final String KEY_PLACE_NAME = "place_name";
-    private static final String KEY_LONGITUDE = "longitude";
-    private static final String KEY_LATITUDE = "latitude";
+    public static final String KEY_ROUTE = "latlng";
+//    private static final String KEY_LONGITUDE = "longitude";
+//    private static final String KEY_LATITUDE = "latitude";
 
 
     public SQLiteHandler(Context context) {
@@ -52,8 +53,7 @@ public class SQLiteHandler extends SQLiteOpenHelper {
         String CREATE_PLACES_TABLE = "CREATE TABLE " + TABLE_PLACES + "("
                 + KEY_ID + " INTEGER PRIMARY KEY,"
                 + KEY_PLACE_NAME + " TEXT UNIQUE,"
-                + KEY_LATITUDE + " TEXT,"
-                + KEY_LONGITUDE + " TEXT" + ")";
+                + KEY_ROUTE + " TEXT"+ ")";
 
         db.execSQL(CREATE_LOGIN_TABLE);
         db.execSQL(CREATE_PLACES_TABLE);
@@ -90,14 +90,14 @@ public class SQLiteHandler extends SQLiteOpenHelper {
         Log.d(TAG, "New user inserted into sqlite: " + id);
     }
 
-            //save route instead of latlng.
-    public void addPlace(String placeName, String latitude, String longitude) {
+            //save latlng list as String
+    public void addPlace(String placeName, String latlng) {
         SQLiteDatabase db = this.getWritableDatabase();
 
         ContentValues contentValues = new ContentValues();
         contentValues.put(KEY_PLACE_NAME, placeName);
-        contentValues.put(KEY_LATITUDE, latitude);
-        contentValues.put(KEY_LONGITUDE, longitude);
+        contentValues.put(KEY_ROUTE, latlng);
+
 
 
         long id = db.insert(TABLE_PLACES, null, contentValues);

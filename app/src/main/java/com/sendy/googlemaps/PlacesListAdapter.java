@@ -1,7 +1,10 @@
 package com.sendy.googlemaps;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.helper.ItemTouchHelper;
@@ -22,6 +25,7 @@ public class PlacesListAdapter extends RecyclerView.Adapter<PlacesListAdapter.Pl
     //private LayoutInflater mInflater;
     private Context context;
 
+
     public PlacesListAdapter(Context context, ArrayList<String> placesList) {
        // mInflater = LayoutInflater.from(context);
         this.placesList = placesList;
@@ -32,7 +36,8 @@ public class PlacesListAdapter extends RecyclerView.Adapter<PlacesListAdapter.Pl
     @NonNull
     @Override
     public PlacesListAdapter.PlacesViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int i) {
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.placeslist_item, parent, false);
+        View view = LayoutInflater.from(parent.getContext())
+                .inflate(R.layout.placeslist_item, parent, false);
         return new PlacesViewHolder(view);
 
     }
@@ -46,15 +51,15 @@ public class PlacesListAdapter extends RecyclerView.Adapter<PlacesListAdapter.Pl
             placesViewHolder.placeItemView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    //Toast.makeText(context, mCurrent,Toast.LENGTH_LONG).show();
+                    Toast.makeText(context, mCurrent,Toast.LENGTH_LONG).show();
+                    Intent intent = new Intent();
 
-//                Methods methods = new Methods();
-//                methods.getPolyline();
+                    intent.putExtra("Current",mCurrent);
+                    ((VisitedPlaces)context).setResult(Activity.RESULT_OK,intent);
+                    ((VisitedPlaces)context).finish();
+//                    context.startActivity(intent);
 
-                    Intent intent = new Intent(context,MapsActivity.class);
-                    intent.putExtra("Current", mCurrent);
 
-                    context.startActivity(intent);
                 }
             });
     }
@@ -68,11 +73,11 @@ public class PlacesListAdapter extends RecyclerView.Adapter<PlacesListAdapter.Pl
     //create a ViewHolder for the adapter
     public class PlacesViewHolder extends RecyclerView.ViewHolder {
         final TextView placeItemView;
-        final LinearLayout placesLinearLayout;
+
 
         public PlacesViewHolder(@NonNull View view) {
             super(view);
-            placesLinearLayout = itemView.findViewById(R.id.placesLinearLayout);
+            //placesLinearLayout = itemView.findViewById(R.id.placesLinearLayout);
             placeItemView = itemView.findViewById(R.id.place);
             context = itemView.getContext();
         }

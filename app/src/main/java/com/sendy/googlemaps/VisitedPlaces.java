@@ -7,10 +7,12 @@ import android.database.sqlite.SQLiteDatabase;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.helper.ItemTouchHelper;
 import android.util.Log;
+import android.view.MenuItem;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -36,6 +38,7 @@ public class VisitedPlaces extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_visited_places);
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
         ArrayList<String> placeslist = getIntent().getStringArrayListExtra("selectedPlaces");
 
@@ -50,12 +53,13 @@ public class VisitedPlaces extends AppCompatActivity {
             // Create an adapter and supply the data to be displayed.
         mAdapter = new PlacesListAdapter(VisitedPlaces.this, placeslist);
         Log.d(TAG,"places list"+placeslist);
-            // Connect the adapter with the RecyclerView.
-        mRecyclerView.setAdapter(mAdapter);
             // Give the RecyclerView a default layout manager.
         mRecyclerView.setLayoutManager(new LinearLayoutManager(context));
         Log.d(TAG, placeslist.toString());
         new ItemTouchHelper(itemTouchHelperCallback).attachToRecyclerView(mRecyclerView);
+        // Connect the adapter with the RecyclerView.
+        mRecyclerView.setAdapter(mAdapter);
+        Log.d(TAG,"itemtouchHelper");
     }
 
     ItemTouchHelper.SimpleCallback itemTouchHelperCallback = new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
@@ -66,17 +70,35 @@ public class VisitedPlaces extends AppCompatActivity {
 
         @Override
         public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int i) {
-            if (placeslist.size()>1){
-                placeslist.remove(i);
+            if (placeslist.size() >=1){
+                placeslist.remove(viewHolder.getAdapterPosition());
                 mAdapter.notifyItemRemoved(i);
-                mAdapter.notifyItemRangeChanged(i, placeslist.size());
+                mAdapter.notifyDataSetChanged();
             }
             else {
                 Toast.makeText(getApplicationContext(),"the list is less than 1",Toast.LENGTH_LONG);
             }
-            mAdapter.notifyItemRemoved(i);
-            mAdapter.notifyDataSetChanged();
+
+
+//            db = sqLiteHandler.getWritableDatabase();
+//            if (placeslist.size()>=1){
+//                placeslist.remove(viewHolder.getAdapterPosition());
+//                mAdapter.notifyItemRemoved(viewHolder.getAdapterPosition());
+//            }
+
+//            else {
+//                Toast.makeText(getApplicationContext(),"the list is less than 1",Toast.LENGTH_LONG);
+//            }
+//            mAdapter.notifyItemRemoved(i);
+//            mAdapter.notifyDataSetChanged();
         }
     };
 
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if(item.getItemId()==android.R.id.home){
+            finish();
+        }
+        return super.onOptionsItemSelected(item);
+    }
 }

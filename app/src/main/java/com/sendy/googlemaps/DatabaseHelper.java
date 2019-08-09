@@ -35,7 +35,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         //db.execSQL("create table "+TABLE_NAME+ "(ID INTEGER PRIMARY KEY AUTOINCREMENT, names TEXT, emails TEXT, passwords TEXT,visitedplaces TEXT)");
 
     }
-
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         //Drop User Table if exist
